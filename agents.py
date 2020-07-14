@@ -8,7 +8,7 @@ import torch.optim as optim
 
 import geoopt.optim as geoptim
 
-from models import QNetwork, HyperbolicQNetwork
+from .models import QNetwork, HyperbolicQNetwork
 
 
 class ExpReplay(object):
