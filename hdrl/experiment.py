@@ -1,13 +1,6 @@
-import os
-import sys
-import math
-import datetime as dt
-
-import matplotlib.pyplot as plt
-
 import numpy as np
 
-from agents import Agent
+from hdrl.agents import Agent
 
 
 class Experiment:
