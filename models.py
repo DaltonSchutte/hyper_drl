@@ -70,7 +70,31 @@ class QNetwork(nn.Module):
 class HyperbolicQNetwork(nn.Module):
     """ Hyperbolic Version of the Q-Network"""
     def __init__(self, state_dim, hidden_dims, action_dim, img=False):
+        """
+        Creates an instance of a Q-Network with specified parameters using
+        hyperbolic network components. Can be configured to have a conv
+        head for use with atari image
+        input
+            PARAMS:
+                state_dim(int):= dimension of the input state
+                hidden_dim(list of ints):= dimension for each hidden layer
+                action_dim(int):= dimension of the output
+                img(bool):= indicates if image input will be used
+        """
         super().__init__()
+        self.state_dim = state_dim
+        self.hidden_dims = hidden_dims
+        self.action_dim = action_dim
+        self.img = img
+
+    def build_conv_head(self):
+        """
+        Builds a series of convolutional layers per specifications
+        NOT YET IMPLEMENTED
+        """
+        raise NotImplementedError
+
+    def forward(self, x):
         pass
 
 

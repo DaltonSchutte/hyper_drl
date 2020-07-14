@@ -58,7 +58,7 @@ class ExpReplay(object):
 class Agent:
     """ Agent to interact with and learn from the environment """
     def __init__(self, batch_size, state_size, hidden_dims, action_size,
-                 euclidean, lr, gamma, tau, update_freq, seed, img, device):
+                 euclidean, lr, gamma, tau, update_freq, img, device):
         """
         Base class for a DQN based agent
             ARGS:
@@ -77,37 +77,49 @@ class Agent:
                     weights
                 update_freq(int):= number of time steps between partial
                     updates to the target network
-                seed(int):= seed the random number generators
                 img(bool):= True uses images as input and adds a conv head
                     to the networks False uses environment state
                 device:= "cpu" or "cuda" for training
         """
         self.batch_size = batch_size
         self.state_size = state_size
+        self.hidden_dims = hidden_dims
         self.action_size = action_size
 
         self.gamma = gamma
         self.tau = tau
+        self.lr = lr
         self.update_freq = update_freq
-        self.seed = seed
 
         self.device = device
 
         assert isinstance(euclidean, bool)
         assert isinstance(img, bool)
-        if euclidean:
-            self.qnet_online = QNetwork(state_size, hidden_dims, action_size, img).to(device)
-            self.qnet_target = QNetwork(state_size, hidden_dims, action_size, img).to(device)
-            self.optimizer = optim.Adam(self.qnet_online.parameters(), lr=lr)
-        else:
-            self.qnet_online = HyperbolicQNetwork(state_size, hidden_dims, action_size, img).to(device)
-            self.qnet_target = HyperbolicQNetwork(state_size, hidden_dims, action_size, img).to(device)
-            self.optimzier = geoptim.RiemannianAdam(self.qnet_online.parameters(), lr=lr)
 
-        self.memory = ExpReplay(capacity=int(1e5), action_size=action_size, batch_size=batch_size,
-                                device=device, seed=seed)
+        self.qnet_online = None
+        self.qnet_target = None
+        self.optimizer = None
+        self.memory = None
 
         self.t = 0
+
+    def init_components(self, seed):
+        """
+        Initializes the networks and memory using the seed provided
+        """
+        if self.euclidean:
+            self.qnet_online = QNetwork(self.state_size, self.hidden_dims, self.action_size, self.img).to(self.device)
+            self.qnet_target = QNetwork(self.state_size, self.hidden_dims, self.action_size, self.img).to(self.device)
+            self.optimizer = optim.Adam(self.qnet_online.parameters(), lr=self.lr)
+        else:
+            self.qnet_online = HyperbolicQNetwork(self.state_size, self.hidden_dims,
+                                                  self.action_size, self.img).to(self.device)
+            self.qnet_target = HyperbolicQNetwork(self.state_size, self.hidden_dims,
+                                                  self.action_size, self.img).to(self.device)
+            self.optimizer = geoptim.RiemannianAdam(self.qnet_online.parameters(), lr=self.lr)
+
+        self.memory = ExpReplay(capacity=int(1e5), action_size=self.action_size, batch_size=self.batch_size,
+                                device=self.device, seed=seed)
 
     def act(self, state, epsilon):
         """
@@ -118,6 +130,67 @@ class Agent:
             RETURNS:
                 action to be executed in the environment
         """
+        state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
 
+        self.qnet_online.eval()
+        with torch.no_grad():
+            act_values = self.qnet_online(state)
+        self.qnet_online.train()
 
+        if random.random() > epsilon:
+            return np.argmax(act_values.cpu().data.numpy())
+        else:
+            return random.choice(np.arange(self.action_size))
 
+    def step(self, state, action, reward, next_state, done):
+        """
+        Adds an experience to the memory and, if applicable, makes
+        a learning update
+            ARGS:
+                state:=
+                action:=
+                reward:=
+                next_state:=
+                done:=
+        """
+        self.memory.add_experience(state, action, reward, next_state, done)
+
+        self.t = (self.t + 1) % self.update_freq
+
+        if self.t == 0:
+            if len(self.memory) > self.batch_size:
+                experiences = self.memory.sample()
+                self.learn(experiences)
+
+    def learn(self, experiences):
+        """
+        Perform a learning update using a batch of experiences sampled from
+        the Experience Replay Memory
+            ARGS:
+                experiences:=
+        """
+        states, actions, rewards, next_states, dones = experiences
+
+        a_max = torch.argmax(self.qnet_online(next_states), 1).unsqueeze(1)
+        q_targets = rewards + (self.gamma * (1-dones) * self.qnet_target(next_states).gather(1, a_max))
+        q_expected = self.qnet_online(states).gather(1, actions)
+
+        loss = F.mse_loss(q_expected, q_targets)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        self.soft_update(self.qnet_target, self.qnet_online)
+
+    def soft_update(self, target_net, online_net):
+        """
+        Performs a partial update to the target network weights using
+        the online network weights
+            ARGS:
+                target_net:=
+                online_net:=
+        """
+        for target_param, online_param in zip(target_net.parameters(),
+                                              online_net.parameters()):
+            target_param.data.copy(self.tau * online_param.data +
+                                   (1.0-self.tau) * target_param.data)
