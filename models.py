@@ -69,7 +69,7 @@ class QNetwork(nn.Module):
 
 class HyperbolicQNetwork(nn.Module):
     """ Hyperbolic Version of the Q-Network"""
-    def __init__(self):
+    def __init__(self, state_dim, hidden_dims, action_dim, img=False):
         super().__init__()
         pass
 

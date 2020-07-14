@@ -62,18 +62,25 @@ class Agent:
         """
         Base class for a DQN based agent
             ARGS:
-                batch_size(int):=
-                state_size(int):=
-                hidden_dims(list):=
-                action_size(int):=
-                euclidean(bool):=
-                lr(float):=
-                gamma(0<=float<=1):=
-                tau(float):=
-                update_freq(int):=
-                seed(int):=
-                img(bool):=
-                device:=
+                batch_size(int):= number of experiences to sample from
+                    the memory
+                state_size(int):= dimension of the state
+                hidden_dims(list):= list of layer widths (int) for the
+                    hidden layers
+                action_size(int):= number of available actions
+                euclidean(bool):= True uses standard Euclidean geometry
+                    False uses Hyperbolic embedding
+                lr(float):= learning rate for network training
+                gamma(0<=float<=1):= reward discount factor
+                tau(float):= interpolation factor for updating the target
+                    network with the online network
+                    weights
+                update_freq(int):= number of time steps between partial
+                    updates to the target network
+                seed(int):= seed the random number generators
+                img(bool):= True uses images as input and adds a conv head
+                    to the networks False uses environment state
+                device:= "cpu" or "cuda" for training
         """
         self.batch_size = batch_size
         self.state_size = state_size
@@ -97,7 +104,7 @@ class Agent:
             self.qnet_target = HyperbolicQNetwork(state_size, hidden_dims, action_size, img).to(device)
             self.optimzier = geoptim.RiemannianAdam(self.qnet_online.parameters(), lr=lr)
 
-        self.memory = ExpReplay(capacity=1e5, action_size=action_size, batch_size=batch_size,
+        self.memory = ExpReplay(capacity=int(1e5), action_size=action_size, batch_size=batch_size,
                                 device=device, seed=seed)
 
         self.t = 0
