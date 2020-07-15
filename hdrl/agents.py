@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 
-import geoopt.optim as geoptim
+from geoopt.optim import RiemannianAdam
 
 from .models import QNetwork, HyperbolicQNetwork
 
@@ -91,10 +91,12 @@ class Agent:
         self.lr = lr
         self.update_freq = update_freq
 
-        self.device = device
-
         assert isinstance(euclidean, bool)
         assert isinstance(img, bool)
+
+        self.euclidean = euclidean
+        self.device = device
+        self.img = img
 
         self.qnet_online = None
         self.qnet_target = None
@@ -116,7 +118,7 @@ class Agent:
                                                   self.action_size, self.img).to(self.device)
             self.qnet_target = HyperbolicQNetwork(self.state_size, self.hidden_dims,
                                                   self.action_size, self.img).to(self.device)
-            self.optimizer = geoptim.RiemannianAdam(self.qnet_online.parameters(), lr=self.lr)
+            self.optimizer = RiemannianAdam(self.qnet_online.parameters(), lr=self.lr)
 
         self.memory = ExpReplay(capacity=int(1e5), action_size=self.action_size, batch_size=self.batch_size,
                                 device=self.device, seed=seed)
