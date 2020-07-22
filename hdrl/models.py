@@ -39,11 +39,11 @@ class QNetwork(nn.Module):
             if i == 0:
                 self.body.update({'in_layer': nn.Linear(self.state_dim, dim)})
                 self.body.update({f'relu_{i}': nn.ReLU()})
-            elif i == (len(self.hidden_dims) - 1):
-                self.body.update({'out_layer': nn.Linear(dim, self.action_dim)})
             else:
                 self.body.update({f'layer_{i}': nn.Linear(self.hidden_dims[i-1], dim)})
                 self.body.update({f'relu_{i}': nn.ReLU()})
+
+        self.body.update({'out_layer': nn.Linear(self.hidden_dims[-1], self.action_dim)})
 
         self.body = nn.Sequential(self.body)
 

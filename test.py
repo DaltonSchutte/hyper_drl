@@ -2,6 +2,7 @@ import pytest
 
 import numpy as np
 
+import torch
 from torch.nn import Sequential
 
 from . import agents, experiment, models
@@ -9,12 +10,12 @@ from . import agents, experiment, models
 """ GLOBALS """
 SEED = 314
 
-STATE = np.array([1, 2, 3, 4])
+STATE = np.array([1.1, 2.2, 3.3, 4.4])
 
 # Euclidean Agent Variables and Setup
 euclid_agent_params = {"batch_size": 32,
                        "state_size": 4,
-                       "hidden_dims": [10],
+                       "hidden_dims": [10,5],
                        "action_size": 2,
                        "euclidean": True,
                        "lr": 0.01,
@@ -33,22 +34,46 @@ euclidean_agent.init_components(SEED)
 # Unit Tests
 
 class TestEuclideanAgent:
-    def test_online_net(self):
+    # Tests for the online Q network
+    def test_online_net_state_dim(self):
         assert euclidean_agent.qnet_online.state_dim == 4
-        assert euclidean_agent.qnet_online.hidden_dims == [10]
+
+    def test_online_net_hidden_dims(self):
+        assert euclidean_agent.qnet_online.hidden_dims == [10, 5]
+
+    def test_online_net_action_dim(self):
         assert euclidean_agent.qnet_online.action_dim == 2
+
+    def test_online_net_body(self):
         assert isinstance(euclidean_agent.qnet_online.body, Sequential) ==  True
 
-    def test_target_net(self):
+    # Tests for the target Q network
+    def test_target_net_state_dim(self):
         assert euclidean_agent.qnet_target.state_dim == 4
-        assert euclidean_agent.qnet_target.hidden_dims == [10]
+
+    def test_target_net_hidden_dims(self):
+        assert euclidean_agent.qnet_target.hidden_dims == [10, 5]
+
+    def test_target_net_action_dim(self):
         assert euclidean_agent.qnet_target.action_dim == 2
+
+    def test_target_net_body(self):
         assert isinstance(euclidean_agent.qnet_target.body, Sequential) == True
 
-    def test_memory(self):
+    # Memory tests
+    def test_memory_batch_size(self):
         assert euclidean_agent.memory.batch_size == 32
+
+    def test_memory_action_size(self):
         assert euclidean_agent.memory.action_size == 2
+
+    def test_memory_device(self):
         assert euclidean_agent.memory.device == 'cpu'
 
-    def test_act(self):
-        assert euclidean_agent.act(STATE, 0.05) in [0,1]
+    # Agent action test
+    def test_act_greedy_policy(self):
+        assert euclidean_agent.act(STATE, 0.0) in [0, 1]
+
+    def test_act_random_policy(self):
+        assert euclidean_agent.act(STATE, 1.0) in [0, 1]
+
