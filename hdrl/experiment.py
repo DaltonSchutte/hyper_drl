@@ -1,5 +1,5 @@
 import os
-import datetime.datetime as dt
+import datetime as dt
 import csv
 
 import matplotlib.pyplot as plt
@@ -8,7 +8,7 @@ import numpy as np
 
 import gym
 
-from hdrl.agents import Agent
+from .agents import Agent
 
 """
 NOTES:
@@ -60,7 +60,7 @@ class Experiment:
                           'Env': self.env_name,
                           'No. Trials': self.trials,
                           'Max Episodes': self.ep_max,
-                          'Date': dt.now()
+                          'Date': dt.datetime.now()
                           }
         self.results = {}
 
