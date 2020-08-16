@@ -5,7 +5,9 @@ import numpy as np
 import torch
 from torch.nn import Sequential
 
-from . import agents, experiment, models
+from hdrl import agents
+import hdrl.experiment as experiment
+import hdrl.models as models
 
 """ GLOBALS """
 SEED = 314
@@ -19,11 +21,11 @@ euclid_agent_params = {"batch_size": 32,
                        "action_size": 2,
                        "euclidean": True,
                        "lr": 0.01,
-                      "gamma": 0.999,
-                      "tau": 0.001,
-                      "update_freq": 4,
-                      "img": False,
-                      "device": 'cpu'}
+                       "gamma": 0.999,
+                       "tau": 0.001,
+                       "update_freq": 4,
+                       "img": False,
+                       "device": 'cpu'}
 
 euclidean_agent = agents.Agent(**euclid_agent_params)
 euclidean_agent.init_components(SEED)
@@ -45,7 +47,7 @@ class TestEuclideanAgent:
         assert euclidean_agent.qnet_online.action_dim == 2
 
     def test_online_net_body(self):
-        assert isinstance(euclidean_agent.qnet_online.body, Sequential) ==  True
+        assert isinstance(euclidean_agent.qnet_online.body, Sequential) == True
 
     # Tests for the target Q network
     def test_target_net_state_dim(self):
